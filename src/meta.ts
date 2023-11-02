@@ -77,10 +77,12 @@ export async function getTags(files: string[]) : Promise<Map<string, linkedFileT
  * the tags we care about
  * @param files {string[]} - path to image files
  * @param newTags {Object} - JSON Object of metadata tags
+ * @returns string[] - logs of tags that were modified
  */
-export async function writeImageTags(files: string[], newTags: any) {
+export async function writeImageTags(files: string[], newTags: any) : Promise<string[]>{
   const fileTags = await getTags(files);
   const promises : Array<Promise<any>> = [];
+  const modified : string[] = [];
 
   fileTags.forEach((currentTags, id) => {
     const tagToWrite : xmpTagType = {};
@@ -89,6 +91,7 @@ export async function writeImageTags(files: string[], newTags: any) {
       if (currentTags.creator != newTags.creator) {
         const warning = `WARNING: Overwriting ${path.basename(currentTags.fileName)} ` +
           `existing creator: ${currentTags.creator} with ${newTags.creator}`;
+        modified.push(warning);
         console.log(chalk.red(warning));
       }
 
@@ -100,6 +103,7 @@ export async function writeImageTags(files: string[], newTags: any) {
       if (currentTags.license != newTags.license) {
         const warning = `WARNING: Overwriting ${path.basename(currentTags.fileName)} ` +
           `existing license: ${currentTags.license} with ${newTags.license}`;
+        modified.push(warning);
         console.log(chalk.red(warning));
       }
 
@@ -111,6 +115,7 @@ export async function writeImageTags(files: string[], newTags: any) {
       if (currentTags.rights != newTags.rights) {
         const warning = `WARNING: Overwriting ${path.basename(currentTags.fileName)} ` +
           `existing rights: ${currentTags.rights} with ${newTags.rights}`;
+        modified.push(warning);
         console.log(chalk.red(warning));
       }
 
@@ -130,4 +135,6 @@ export async function writeImageTags(files: string[], newTags: any) {
    .catch((error) => {
     console.error(error.message);
    });
+
+  return modified;
 }

@@ -192,11 +192,11 @@ function prettyPrintMap(map: Map<string, meta.linkedFileType>) : string {
 ////////////////////////////////////////////////////////////////////
 // Routing commands to functions
 ////////////////////////////////////////////////////////////////////
-let linkedFiles = new Map();
 
 // Determine files and tags to process
 let files = determineFiles(options);
 let newTags = determineNewTags(options);
+let modified: string[] = [];
 
 // Overwrite metadata tags
 if (newTags) {
@@ -210,18 +210,20 @@ if (newTags) {
     process.exit(1);
   }
 
-  await meta.writeImageTags(files, newTags);
+  modified = await meta.writeImageTags(files, newTags);
 }
 
 // Read tags
-linkedFiles = await meta.getTags(files);
+let linkedFiles = await meta.getTags(files);
 
 // Generate summary
 printSummary(linkedFiles);
 
 // Write summary to file.
 const filename = 'log.json';
-fs.writeFileSync('./' + filename, prettyPrintMap(linkedFiles));
+
+fs.writeFileSync('./' + filename, `{\n\"modified\":  ${prettyPrint(modified)},\n` +
+  `\"linkedFiles\": ${prettyPrintMap(linkedFiles)}\n}`);
 console.log(`metadata log written to ${filename}`);
 
 console.log('All done processing');
