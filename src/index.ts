@@ -4,11 +4,18 @@
 import chalk from 'chalk';
 import {CommanderError, program} from 'commander';
 import {exiftool, parseJSON} from 'exiftool-vendored';
+import express from 'express';
 import * as fs from 'fs';
 import {glob} from 'glob';
 import * as meta from './meta.js';
+import path from 'path';
 import require from './cjs-require.js';
+import PhotoViewer from 'photoviewer';
 import promptSync from 'prompt-sync';
+import { fileURLToPath} from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 ////////////////////////////////////////////////////////////////////
 // Get parameters
@@ -196,6 +203,37 @@ function prettyPrintMap(map: Map<string, meta.linkedFileType>) : string {
 // Determine files and tags to process
 let files = determineFiles(options);
 let newTags = determineNewTags(options);
+
+// Generate images array for photoviewer
+let photoItems : PhotoViewer.Img[] = [];
+files.forEach(file => {
+  const i: PhotoViewer.Img =
+  {
+    src: file,
+    title: path.basename(file)
+  }
+  photoItems.push(i);
+})
+const photoviewerOptions : PhotoViewer.Options = {
+  // optionName: 'option value'
+  // for example:
+  index: 0 // this option means you will start at first image
+};
+
+console.log(`${path.resolve(__dirname)}`);
+const app = express();
+app.get('/', (req, res) => {
+  const filePath = path.resolve(__dirname, '../src/index.html');
+  res.sendFile(filePath);
+})
+
+app.listen(1337, () => {
+  console.log('Server is running!');
+})
+
+// Start the photoviewer
+const photoviewer = new PhotoViewer(photoItems, photoviewerOptions);
+
 let modified: string[] = [];
 
 // Overwrite metadata tags
