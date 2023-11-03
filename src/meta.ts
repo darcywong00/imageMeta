@@ -39,21 +39,21 @@ chalk.level = 1; // Use colors in the VS Code Debug Window
 /**
  * Retrieve the metadata tags from a list of files
  * @param files {string[]} - Path to image files
- * @returns - Map of file id to linkedFileType
+ * @returns - Object of file id to linkedFileType
  */
-export async function getTags(files: string[]) : Promise<Map<string, linkedFileType>> {
+export async function getTags(files: string[]) : Promise<Object> {
   const promises : Array<Promise<any>> = [];
   files.forEach((file) => {
     promises.push(exiftool.readRaw(file, ['all', '-xmp:all']));
   });
 
-  let linkedFiles = new Map();
+  let linkedFiles = {};
   const allTags = await Promise.all(promises);
   allTags.forEach(rawTags => {
     const str: string = JSON.stringify(rawTags);
     const tags: any = parseJSON(str) as any;
     const id = path.basename(tags.SourceFile);
-    linkedFiles.set(id, {
+    linkedFiles[id] = {
       fileName: id,
       fileType: "image",
 
@@ -64,7 +64,7 @@ export async function getTags(files: string[]) : Promise<Map<string, linkedFileT
 
       // Uncomment if we want more metadata tags
       //tags: tags
-    });
+    };
   });
 
   return linkedFiles;
@@ -84,7 +84,7 @@ export async function writeImageTags(files: string[], newTags: any) : Promise<st
   const promises : Array<Promise<any>> = [];
   const modified : string[] = [];
 
-  fileTags.forEach((currentTags, id) => {
+  for (const [id, currentTags] of Object.entries(fileTags)) {
     const tagToWrite : xmpTagType = {};
     // Update creator info
     if (newTags.hasOwnProperty('creator')) {
@@ -129,7 +129,7 @@ export async function writeImageTags(files: string[], newTags: any) : Promise<st
           tagToWrite as WriteTags,
           ['-overwrite_original']));
     }
-  });
+  };
 
   await Promise.all(promises)
    .catch((error) => {

@@ -140,12 +140,12 @@ function determineNewTags(options: any) : Object {
 
 /**
  * Print summary of metadata info
- * @param linkedFiles Map of file id to linkedFileType
+ * @param linkedFiles Object of file id to linkedFileType
  */
-function printSummary(linkedFiles: Map<string, meta.linkedFileType>) {
+function printSummary(linkedFiles: Object) {
   console.log(chalk.blue('\n------------------------'));
   console.log(chalk.blue('Licensing Info Summary:'));
-  linkedFiles.forEach((linkedFile) => {
+  for (const [filename, linkedFile] of Object.entries(linkedFiles)) {
     const tagInfo = `${linkedFile.fileType} file ${linkedFile.fileName} has\n\t` +
       `Source File: ${linkedFile.sourceFile}\n\t` +
       `File Type: ${linkedFile.fileType}\n\t` +
@@ -157,7 +157,7 @@ function printSummary(linkedFiles: Map<string, meta.linkedFileType>) {
     } else {
       console.log(chalk.green(tagInfo));
     }
-  })
+  }
 }
 
 /**
@@ -167,26 +167,6 @@ function printSummary(linkedFiles: Map<string, meta.linkedFileType>) {
  */
 function prettyPrint(json: Object) : string {
   return JSON.stringify(json, (k, v) => v === undefined ? null : v, 2);
-}
-
-/**
- * Pretty-print Map to string. undefined fields treated as null.
- * @param map {Map<string, linkedFileType>}
- * @returns string
- */
-function prettyPrintMap(map: Map<string, meta.linkedFileType>) : string {
-  let str = "{\n";
-  let firstObject = true;
-  map.forEach((json, id) => {
-    if (!firstObject) {
-      str += `,\n`;
-    } else {
-      firstObject = false;
-    }
-    str += `  \"${id}\": ${JSON.stringify(json, (k, v) => v === undefined ? null : v, 4)}`;
-  });
-  str += "}";
-  return str;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -206,11 +186,9 @@ if (newTags) {
   const prompt = promptSync();
   let confirmation = prompt("Are you sure you want to modify the metadata for all the images in the project? (y/n) ");
   confirmation = String(confirmation);
-  if (confirmation.toLowerCase() === 'n') {
-    process.exit(1);
+  if (confirmation.toLowerCase() != 'n') {
+    modified = await meta.writeImageTags(files, newTags);
   }
-
-  modified = await meta.writeImageTags(files, newTags);
 }
 
 // Read tags
@@ -220,10 +198,13 @@ let linkedFiles = await meta.getTags(files);
 printSummary(linkedFiles);
 
 // Write summary to file.
+const logObj = {
+  modified: modified,
+  linkedFiles: linkedFiles
+};
 const filename = 'log.json';
 
-fs.writeFileSync('./' + filename, `{\n\"modified\":  ${prettyPrint(modified)},\n` +
-  `\"linkedFiles\": ${prettyPrintMap(linkedFiles)}\n}`);
+fs.writeFileSync('./' + filename, prettyPrint(logObj));
 console.log(`metadata log written to ${filename}`);
 
 console.log('All done processing');
