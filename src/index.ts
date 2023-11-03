@@ -4,6 +4,7 @@
 import chalk from 'chalk';
 import {CommanderError, program} from 'commander';
 import {exiftool, parseJSON} from 'exiftool-vendored';
+import express from 'express';
 import * as fs from 'fs';
 import {glob} from 'glob';
 import * as meta from './meta.js';
@@ -221,9 +222,14 @@ printSummary(linkedFiles);
 
 // Write summary to file.
 const filename = 'log.json';
+const logObj = {
+  modified: modified,
+  linkedFiles: JSON.stringify(Array.from(linkedFiles.entries()))
+};
+const prettyLog = `{\n\"modified\":  ${prettyPrint(modified)},\n` +
+`\"linkedFiles\": ${prettyPrintMap(linkedFiles)}\n}`;
 
-fs.writeFileSync('./' + filename, `{\n\"modified\":  ${prettyPrint(modified)},\n` +
-  `\"linkedFiles\": ${prettyPrintMap(linkedFiles)}\n}`);
+fs.writeFileSync('./' + filename, prettyLog);
 console.log(`metadata log written to ${filename}`);
 
 console.log('All done processing');
@@ -233,3 +239,15 @@ console.log('All done processing');
 
 // Cleanup
 exiftool.end();
+
+// Display log in Express server
+const app = express();
+if (options.projectPath) {
+  app.use(express.static(`${options.projectPath}/LinkedFiles/Pictures`));
+  //app.use(express.static('files'));
+}
+app.get('/', (request, response) => {
+  response.json(logObj);
+});
+app.listen(3000, console.log('App listening to port 3000'));
+
